@@ -7,13 +7,20 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ CORS config with preflight support
+// ✅ CORS config
 app.use(cors({
   origin: ['https://msv-engg25.github.io', 'http://localhost:5500'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
-app.options('*', cors()); // ✅ Enable preflight requests for all routes
+
+// ✅ Manually handle preflight requests to avoid path-to-regexp error
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(204);
+});
 
 app.use(express.json());
 
