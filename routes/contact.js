@@ -2,49 +2,45 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 
-router.post('/', async (req, res) => {
-  const { name, company, email, phone, subject, message, inquiryType, consent } = req.body;
+router.post('/contact', async (req, res) => {
+  const { name, email, message } = req.body;
 
-  // Validate input
-  if (!name || !company || !email || !phone || !subject || !message || !inquiryType || !consent) {
-    return res.status(400).json({ message: 'All fields are required.' });
+  // Basic validation
+  if (!name || !email || !message) {
+    return res.status(400).json({ success: false, error: 'All fields are required.' });
   }
 
   try {
-    // Configure Nodemailer transporter
+    // Create transporter with environment variables
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT) || 465,
-      secure: true,
+      port: parseInt(process.env.SMTP_PORT),
+      secure: true, // true for port 465
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
-    // Email options
+    // Email content
     const mailOptions = {
-      from: `"TSISPAT Contact Form" <${process.env.SMTP_USER}>`,
-      to: process.env.RECEIVER_EMAIL,
-      subject: `New Inquiry: ${subject}`,
-      html: `
-        <h3>Contact Form Submission</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Company:</strong> ${company}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Inquiry Type:</strong> ${inquiryType}</p>
-        <p><strong>Message:</strong><br>${message.replace(/\n/g, '<br>')}</p>
+      from: `"${name}" <${email}>`,
+      to: process.env.EMAIL_TO,
+      subject: 'New Contact Form Submission',
+      text: `
+        Name: ${name}
+        Email: ${email}
+        Message: ${message}
       `,
     };
 
-    // Send the email
+    // Send email
     await transporter.sendMail(mailOptions);
 
-    res.status(200).json({ message: 'Thank you for contacting us! We will get back to you soon.' });
+    res.status(200).json({ success: true, message: 'Message sent successfully!' });
   } catch (error) {
     console.error('Email sending error:', error);
-    res.status(500).json({ message: 'Failed to send message. Please try again later.' });
+    res.status(500).json({ success: false, error: 'Failed to send message.' });
   }
 });
 
