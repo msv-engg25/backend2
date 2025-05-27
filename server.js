@@ -1,31 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config(); // Loads variables from .env
+require('dotenv').config(); // Load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // Replace with your frontend domain in production
+}));
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Mongoose schema and model
+// Mongoose Schema & Model
 const contactSchema = new mongoose.Schema({
-  name: String,
+  name: { type: String, required: true },
   company: String,
-  email: String,
+  email: { type: String, required: true },
   phone: String,
   subject: String,
-  message: String,
+  message: { type: String, required: true },
   inquiryType: String,
   consent: Boolean,
   createdAt: { type: Date, default: Date.now }
@@ -33,18 +32,24 @@ const contactSchema = new mongoose.Schema({
 
 const Contact = mongoose.model('Contact', contactSchema);
 
-// POST route for contact form
+// Health Check Route
+app.get('/', (req, res) => {
+  res.send('✅ Backend is running');
+});
+
+// POST Route to Handle Contact Form
 app.post('/api/contact', async (req, res) => {
   try {
     const contact = new Contact(req.body);
     await contact.save();
-    res.status(200).json({ message: 'Form submitted successfully' });
+    res.status(200).json({ success: true, message: 'Form submitted successfully' });
   } catch (error) {
-    console.error('Error saving contact:', error);
-    res.status(500).json({ error: 'Failed to submit form' });
+    console.error('❌ Error saving contact:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to submit form. Please try again later.' });
   }
 });
 
+// Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
