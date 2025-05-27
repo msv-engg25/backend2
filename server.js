@@ -7,19 +7,18 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ CORS: Allow both GitHub Pages and local dev
+// ✅ CORS config
 app.use(cors({
-  origin: ['https://msv-engg25.github.io', 'http://localhost:5500', 'http://127.0.0.1:5500']
+  origin: ['https://msv-engg25.github.io', 'http://localhost:5500']
 }));
-
 app.use(express.json());
 
-// ✅ Connect to MongoDB
+// ✅ MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// ✅ Contact schema
+// ✅ Schema
 const contactSchema = new mongoose.Schema({
   name: { type: String, required: true },
   company: String,
@@ -33,7 +32,7 @@ const contactSchema = new mongoose.Schema({
 });
 const Contact = mongoose.model('Contact', contactSchema);
 
-// ✅ Email transporter
+// ✅ Email
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -42,12 +41,11 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ✅ Health check
+// ✅ Routes
 app.get('/', (req, res) => {
   res.send('✅ Backend is running');
 });
 
-// ✅ POST: handle form submission
 app.post('/api/contact', async (req, res) => {
   try {
     const contact = new Contact(req.body);
