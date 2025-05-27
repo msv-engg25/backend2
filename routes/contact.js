@@ -1,46 +1,43 @@
 const express = require('express');
 const router = express.Router();
+const Contact = require('../models/Contact');
 const nodemailer = require('nodemailer');
 
-router.post('/contact', async (req, res) => {
-  const { name, email, message } = req.body;
-
-  // Basic validation
-  if (!name || !email || !message) {
-    return res.status(400).json({ success: false, error: 'All fields are required.' });
-  }
+router.post('/', async (req, res) => {
+  const data = req.body;
 
   try {
-    // Create transporter with environment variables
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: true, // true for port 465
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // Email content
-    const mailOptions = {
-      from: `"${name}" <${email}>`,
-      to: process.env.EMAIL_TO,
-      subject: 'New Contact Form Submission',
-      text: `
-        Name: ${name}
-        Email: ${email}
-        Message: ${message}
-      `,
-    };
+    const saved = await Contact.create(data);
 
     // Send email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_RECEIVER || process.env.EMAIL_USER,
+      subject: `New Contact Form Submission: ${data.subject}`,
+      html: `
+        <h3>New Message from ${data.name}</h3>
+        <p><strong>Company:</strong> ${data.company}</p>
+        <p><strong>Email:</strong> ${data.email}</p>
+        <p><strong>Phone:</strong> ${data.phone}</p>
+        <p><strong>Inquiry Type:</strong> ${data.inquiryType}</p>
+        <p><strong>Message:</strong> ${data.message}</p>
+      `
+    };
+
     await transporter.sendMail(mailOptions);
 
-    res.status(200).json({ success: true, message: 'Message sent successfully!' });
-  } catch (error) {
-    console.error('Email sending error:', error);
-    res.status(500).json({ success: false, error: 'Failed to send message.' });
+    res.status(200).json({ message: 'Message received and email sent successfully!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error. Try again later.' });
   }
 });
 

@@ -9,10 +9,6 @@ const contactSchema = new mongoose.Schema({
   message: String,
   inquiryType: String,
   consent: Boolean,
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Contact', contactSchema);
